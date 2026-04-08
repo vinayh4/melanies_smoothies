@@ -2,7 +2,6 @@
 import pandas as pd
 import requests
 import streamlit as st
-from snowflake.snowpark.functions import col
 
 st.set_page_config(page_title="Melanie's Smoothies", page_icon="🥤")
 st.markdown(
@@ -34,14 +33,17 @@ st.write(
   """
 )
 
-cnx = st.connection("snowflake")
-session = cnx.session()
-my_dataframe = session.table("smoothies.public.fruit_options").select(
-    col("FRUIT_NAME"), col("SEARCH_ON")
-)
-
-# Convert the Snowpark dataframe to pandas dataframe
-pd_df = my_dataframe.to_pandas()
+fruit_records = [
+    {"FRUIT_NAME": "Apple", "SEARCH_ON": "apple"},
+    {"FRUIT_NAME": "Banana", "SEARCH_ON": "banana"},
+    {"FRUIT_NAME": "Blueberry", "SEARCH_ON": "blueberry"},
+    {"FRUIT_NAME": "Mango", "SEARCH_ON": "mango"},
+    {"FRUIT_NAME": "Orange", "SEARCH_ON": "orange"},
+    {"FRUIT_NAME": "Pineapple", "SEARCH_ON": "pineapple"},
+    {"FRUIT_NAME": "Raspberry", "SEARCH_ON": "raspberry"},
+    {"FRUIT_NAME": "Strawberry", "SEARCH_ON": "strawberry"},
+]
+pd_df = pd.DataFrame(fruit_records)
 fruit_options = pd_df["FRUIT_NAME"].tolist()
 
 ingredients_list = st.multiselect(
@@ -69,5 +71,7 @@ if ingredients_list:
             insert into smoothies.public.orders(ingredients, name_on_order)
             values ('{ingredients_sql}', '{name_sql}')
         """
+        cnx = st.connection("snowflake")
+        session = cnx.session()
         session.sql(my_insert_stmt).collect()
         st.success(f"Your Smoothie is ordered, {name_on_order}", icon="✅")
