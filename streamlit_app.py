@@ -55,11 +55,17 @@ if ingredients_list:
         search_on = pd_df.loc[pd_df["FRUIT_NAME"] == fruit_chosen, "SEARCH_ON"].iloc[0]
         st.write("The search value for", fruit_chosen, "is", search_on, ".")
         st.subheader(f"{fruit_chosen} Nutrition Information")
-        smoothiefroot_response = requests.get(
-            f"https://my.smoothiefroot.com/api/fruit/{search_on}", timeout=10
-        )
-        smoothiefroot_response.raise_for_status()
-        st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
+        try:
+            smoothiefroot_response = requests.get(
+                f"https://my.smoothiefroot.com/api/fruit/{search_on}", timeout=10
+            )
+            smoothiefroot_response.raise_for_status()
+            st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
+        except requests.exceptions.RequestException as exc:
+            st.warning(
+                f"Could not load nutrition information for {fruit_chosen}. "
+                f"Please try again later. ({exc})"
+            )
 
     time_to_insert = st.button("Submit Order")
     if time_to_insert:
