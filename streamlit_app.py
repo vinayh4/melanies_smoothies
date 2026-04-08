@@ -4,6 +4,26 @@ import pandas as pd
 import requests
 from snowflake.snowpark.functions import col
 
+st.set_page_config(page_title="Melanie's Smoothies", page_icon="🥤")
+st.markdown(
+    """
+    <style>
+    html, body, [class*="css"] {
+        font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    }
+    h1, h2, h3 {
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+    p, label, li, [data-testid="stMarkdownContainer"] {
+        font-size: 1rem;
+        line-height: 1.5;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 name_on_order = st.text_input("Name on Smoothie")
 st.write("The name on Smoothie will be:", name_on_order)
 
