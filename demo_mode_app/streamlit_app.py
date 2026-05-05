@@ -6,6 +6,7 @@ import pandas as pd
 import certifi
 import requests
 import streamlit as st
+import urllib3
 
 st.set_page_config(page_title="Melanie's Smoothies (Demo)", page_icon="🥤")
 
@@ -74,11 +75,15 @@ def load_fruit_options() -> pd.DataFrame:
     return DEFAULT_FRUIT_OPTIONS.copy()
 
 
-def fetch_nutrition(search_on: str) -> dict:
+def fetch_nutrition(search_on: str, verify_ssl: bool = True) -> dict:
+    verify_value: str | bool = certifi.where() if verify_ssl else False
+    if not verify_ssl:
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
     response = requests.get(
         f"https://my.smoothiefroot.com/api/fruit/{search_on}",
         timeout=10,
-        verify=certifi.where(),
+        verify=verify_value,
     )
     response.raise_for_status()
     return response.json()
@@ -105,6 +110,12 @@ st.write("The name on Smoothie will be:", name_on_order or "Guest")
 fruit_df = load_fruit_options()
 fruit_options = fruit_df["FRUIT_NAME"].dropna().tolist()
 
+verify_ssl = st.toggle(
+    "Verify SSL certificates for nutrition API",
+    value=True,
+    help="Turn off only if your Windows/corporate certificate setup blocks HTTPS verification.",
+)
+
 ingredients_list = st.multiselect(
     "Choose your ingredients (more than 5 allowed):",
     fruit_options,
@@ -119,12 +130,11 @@ if ingredients_list:
         ].iloc[0]
         st.write("The search value for", fruit_chosen, "is", search_on, ".")
         try:
-            nutrition = fetch_nutrition(search_on)
-            st.dataframe(data=nutrition, use_container_width=True)
+            nutrition = fetch_nutrition(search_on, verify_ssl=verify_ssl)
+            st.dataframe(data=nutrition, width="stretch")
         except requests.RequestException as exc:
             st.warning(
-                f"Could not fetch nutrition for {fruit_chosen}. "
-                f"You can still place an order. Details: {exc}"
+                f"Could not fetch nutrition for {fruit_chosen}. You can still place an order. Details: {exc}"
             )
 
     if st.button("Submit Order"):
@@ -138,4 +148,4 @@ orders_df = pd.read_csv(ORDERS_PATH)
 if orders_df.empty:
     st.info("No demo orders yet. Submit one above!")
 else:
-    st.dataframe(orders_df.tail(20), use_container_width=True)
+    st.dataframe(orders_df.tail(20), width="stretch")
