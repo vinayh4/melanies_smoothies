@@ -19,6 +19,7 @@ python -m streamlit run streamlit_app.py
 - If `streamlit` is not found, always use: `python -m streamlit run streamlit_app.py`.
 - If you are in a remote container/VM, `localhost` in your personal browser may not reach the app process. Use port forwarding for port `8501`.
 - If nutrition API calls fail, the app still works for placing demo orders locally.
+- If you see SSL certificate verification failures on Windows, run: `python -m pip install --upgrade certifi` and retry.
 
 ## Notes
 - `data/orders.csv` is created automatically on first run.

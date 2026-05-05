@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import pandas as pd
+import certifi
 import requests
 import streamlit as st
 
@@ -74,7 +75,11 @@ def load_fruit_options() -> pd.DataFrame:
 
 
 def fetch_nutrition(search_on: str) -> dict:
-    response = requests.get(f"https://my.smoothiefroot.com/api/fruit/{search_on}", timeout=10)
+    response = requests.get(
+        f"https://my.smoothiefroot.com/api/fruit/{search_on}",
+        timeout=10,
+        verify=certifi.where(),
+    )
     response.raise_for_status()
     return response.json()
 
