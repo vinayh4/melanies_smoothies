@@ -32,8 +32,26 @@ DATA_DIR = BASE_DIR / "data"
 FRUIT_OPTIONS_PATH = DATA_DIR / "fruit_options.csv"
 ORDERS_PATH = DATA_DIR / "orders.csv"
 
+DEFAULT_FRUIT_OPTIONS = pd.DataFrame(
+    [
+        {"FRUIT_NAME": "Apple", "SEARCH_ON": "apple"},
+        {"FRUIT_NAME": "Banana", "SEARCH_ON": "banana"},
+        {"FRUIT_NAME": "Blueberry", "SEARCH_ON": "blueberry"},
+        {"FRUIT_NAME": "Mango", "SEARCH_ON": "mango"},
+        {"FRUIT_NAME": "Strawberry", "SEARCH_ON": "strawberry"},
+        {"FRUIT_NAME": "Pineapple", "SEARCH_ON": "pineapple"},
+        {"FRUIT_NAME": "Spinach", "SEARCH_ON": "spinach"},
+        {"FRUIT_NAME": "Kale", "SEARCH_ON": "kale"},
+    ]
+)
+
+
+def ensure_data_dir() -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+
 
 def ensure_orders_file() -> None:
+    ensure_data_dir()
     if not ORDERS_PATH.exists():
         pd.DataFrame(columns=["ordered_at_utc", "name_on_order", "ingredients"]).to_csv(
             ORDERS_PATH, index=False
@@ -41,7 +59,18 @@ def ensure_orders_file() -> None:
 
 
 def load_fruit_options() -> pd.DataFrame:
-    return pd.read_csv(FRUIT_OPTIONS_PATH)
+    ensure_data_dir()
+    if FRUIT_OPTIONS_PATH.exists():
+        loaded = pd.read_csv(FRUIT_OPTIONS_PATH)
+        required_columns = {"FRUIT_NAME", "SEARCH_ON"}
+        if required_columns.issubset(loaded.columns):
+            return loaded
+        st.warning(
+            "`data/fruit_options.csv` is missing required columns. Using built-in demo fruits."
+        )
+    else:
+        st.info("`data/fruit_options.csv` not found. Using built-in demo fruits.")
+    return DEFAULT_FRUIT_OPTIONS.copy()
 
 
 def fetch_nutrition(search_on: str) -> dict:
@@ -54,7 +83,7 @@ def save_order(name_on_order: str, ingredients_list: list[str]) -> None:
     ensure_orders_file()
     new_row = {
         "ordered_at_utc": datetime.now(timezone.utc).isoformat(),
-        "name_on_order": name_on_order,
+        "name_on_order": name_on_order.strip() or "Guest",
         "ingredients": json.dumps(ingredients_list),
     }
     existing = pd.read_csv(ORDERS_PATH)
@@ -66,10 +95,10 @@ st.title("Customize Your Smoothie (Demo Mode)")
 st.caption("This version runs with local CSV files and does not require Snowflake.")
 
 name_on_order = st.text_input("Name on Smoothie")
-st.write("The name on Smoothie will be:", name_on_order)
+st.write("The name on Smoothie will be:", name_on_order or "Guest")
 
 fruit_df = load_fruit_options()
-fruit_options = fruit_df["FRUIT_NAME"].tolist()
+fruit_options = fruit_df["FRUIT_NAME"].dropna().tolist()
 
 ingredients_list = st.multiselect(
     "Choose your ingredients (more than 5 allowed):",
@@ -88,11 +117,14 @@ if ingredients_list:
             nutrition = fetch_nutrition(search_on)
             st.dataframe(data=nutrition, use_container_width=True)
         except requests.RequestException as exc:
-            st.error(f"Could not fetch nutrition for {fruit_chosen}: {exc}")
+            st.warning(
+                f"Could not fetch nutrition for {fruit_chosen}. "
+                f"You can still place an order. Details: {exc}"
+            )
 
     if st.button("Submit Order"):
         save_order(name_on_order=name_on_order, ingredients_list=ingredients_list)
-        st.success(f"Your Smoothie is ordered, {name_on_order}", icon="✅")
+        st.success("Your Smoothie is ordered.", icon="✅")
 
 st.divider()
 st.subheader("Recent Demo Orders")
